@@ -1,0 +1,17 @@
+{
+  "name": "clarify-intent",
+  "owner": {
+    "name": "franks-ai-skills",
+    "url": "https://github.com/franks-ai-skills"
+  },
+  "description": "Single-plugin marketplace for clarify-intent: makes AI agents ask about your intent instead of guessing.",
+  "plugins": [
+    {
+      "name": "clarify-intent",
+      "source": "./",
+      "description": "Makes the agent stop and ask about your intent instead of guessing when an instruction is ambiguous, underspecified, or about to trigger a decision you did not make.",
+      "version": "1.0.0",
+      "category": "productivity"
+    }
+  ]
+}

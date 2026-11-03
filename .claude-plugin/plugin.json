@@ -1,0 +1,19 @@
+{
+  "name": "clarify-intent",
+  "version": "1.0.0",
+  "description": "Makes the agent stop and ask about your intent instead of guessing when an instruction is ambiguous, underspecified, or about to trigger a decision you did not make.",
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/franks-ai-skills/clarify-intent",
+  "homepage": "https://github.com/franks-ai-skills/clarify-intent",
+  "author": {
+    "name": "franks-ai-skills",
+    "url": "https://github.com/franks-ai-skills"
+  },
+  "keywords": [
+    "clarification",
+    "intent",
+    "ambiguity",
+    "questions",
+    "assumptions"
+  ]
+}
