@@ -1,0 +1,1734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eval report — clarify-intent v1.0.0</title>
+</head>
+<body>
+<style>
+:root{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}}
+:root[data-theme="dark"]{--plane:#0d0d0d;--surface:#1a1a19;--ink:#ffffff;--ink-2:#c3c2b7;--ink-3:#898781;--hairline:rgba(255,255,255,.10);--grid:#2c2c2a;--inset:rgba(255,255,255,.05);--accent:#3987e5;--base-fill:#898781;--delta-good:#0ca30c;--good:#0ca30c;--warning:#fab219;--critical:#e06c6c;color-scheme:dark}
+:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+.wrap{max-width:880px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header h1{margin:2px 0 0;font-size:24px;font-weight:600;line-height:1.25;text-wrap:balance}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;color:var(--ink-2);font-size:13px}
+.meta .num{font-variant-numeric:tabular-nums lining-nums}
+.banner{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;
+  border:1px solid var(--hairline);background:var(--surface);font-size:13px}
+.banner .chip-warn{color:var(--warning);font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:4px}
+.tile .label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.tile .value{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums lining-nums;line-height:1.1}
+.tile.hero .value{font-family:Georgia,"Times New Roman",serif;font-weight:400;font-size:48px}
+.tile .sub{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .value.delta-pos{color:var(--delta-good)}
+.tile .value.delta-neg{color:var(--critical)}
+.toolbar{display:flex;gap:8px;justify-content:flex-end}
+.toolbar button{font:12px system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--hairline);border-radius:6px;padding:4px 10px;cursor:pointer}
+.toolbar button:hover{color:var(--ink)}
+.toolbar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.case{background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:10px}
+.case-regressed{border-left:3px solid var(--critical)}
+.verdict{margin:6px 0 0;font-size:15px}
+.verdict .delta{font-size:15px}
+.flag{font-size:11px;font-weight:600;color:var(--warning);white-space:nowrap}
+.star{color:var(--warning);font-size:.45em;vertical-align:super;line-height:0;cursor:help}
+.legend summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
+.legend-list{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2)}
+.case-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.case-head h2{margin:0;font-size:16px;font-weight:600}
+.case-head .spacer{flex:1}
+.case-score{font-size:15px;font-weight:600}
+.mono{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.muted{color:var(--ink-3);font-size:12px}
+.meter{display:inline-block;position:relative;width:120px;height:6px;border-radius:4px;background:var(--grid);
+  vertical-align:middle}
+.meter>span{display:block;height:100%;border-radius:4px;max-width:100%}
+.meter .tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink-3);border-radius:1px}
+.m-accent>span{background:var(--accent)}
+.m-base>span{background:var(--base-fill)}
+.delta{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.delta-pos{color:var(--delta-good)}
+.delta-neg{color:var(--critical)}
+.delta-zero{color:var(--ink-3)}
+details.section{border-top:1px solid var(--grid);padding-top:10px}
+details.section>summary{cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--ink-2);list-style-position:outside;margin-left:2px}
+details.section>summary:hover{color:var(--ink)}
+details.section[open]>summary{margin-bottom:8px}
+.md{display:flex;flex-direction:column;gap:8px;background:var(--inset);border-radius:8px;
+  padding:12px 14px;overflow-wrap:break-word}
+.md>:first-child{margin-top:0}
+.md h1,.md h2,.md h3,.md h4,.md h5,.md h6{margin:4px 0 0;font-size:1em;font-weight:600;line-height:1.3}
+.md p,.md ul,.md ol,.md blockquote,.md table,.md pre,.md hr{margin:0}
+.md ul,.md ol{display:flex;flex-direction:column;gap:4px;padding-left:20px}
+.md blockquote{border-left:2px solid var(--hairline);padding-left:10px;color:var(--ink-2)}
+.md :not(pre)>code{background:var(--inset);padding:1px 4px;border-radius:4px;
+  font:.92em "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre{background:var(--inset);border:1px solid var(--hairline);padding:10px 12px;border-radius:6px;
+  overflow-x:auto;font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace}
+.md pre code{background:none;padding:0;font:inherit}
+.md table{width:100%;border-collapse:collapse}
+.md th,.md td{padding:5px 8px;text-align:left;vertical-align:top;border-bottom:1px solid var(--grid)}
+.md th{font-weight:600;color:var(--ink-2)}
+.md a{color:var(--accent);text-decoration:none}
+.md a:hover{text-decoration:underline}
+.grader-def{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.grader-def+.grader-def{border-top:1px solid var(--grid)}
+.grader-def-head{display:flex;align-items:baseline;gap:8px}
+.grader-name{font:13px "SF Mono",ui-monospace,Menlo,Consolas,monospace;font-weight:600}
+.badge{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);
+  border:1px solid var(--hairline);border-radius:999px;padding:1px 8px}
+.config{display:flex;flex-direction:column;gap:2px;background:var(--inset);border-radius:8px;padding:10px 14px}
+.config code{font:12px "SF Mono",ui-monospace,Menlo,Consolas,monospace;overflow-wrap:anywhere}
+.arm{display:flex;flex-direction:column;gap:8px;padding:6px 0}
+.arm+.arm{border-top:1px dashed var(--grid);margin-top:4px;padding-top:12px}
+.arm-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.arm-label{font-size:13px;font-weight:600}
+.run{border:1px solid var(--grid);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.run-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.run-title{font-size:12px;font-weight:600;color:var(--ink-2)}
+.run-error .explanation{color:var(--ink-2)}
+.note{font-size:12px;color:var(--ink-2)}
+.graders{display:flex;flex-direction:column;gap:4px}
+details.grader{border-radius:6px}
+details.grader>summary{cursor:pointer;display:flex;align-items:baseline;gap:8px;padding:3px 4px;
+  border-radius:6px;list-style:none}
+details.grader>summary::-webkit-details-marker{display:none}
+details.grader>summary::before{content:'▸';font-size:10px;color:var(--ink-3);flex:none;
+  transition:transform .12s ease}
+details.grader[open]>summary::before{transform:rotate(90deg)}
+details.grader>summary:hover{background:var(--inset)}
+details.grader>summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.grader-body{padding:6px 8px 8px 24px;display:flex;flex-direction:column;gap:6px}
+.chip{font-size:11px;font-weight:600;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chip-pass{color:var(--good);border:1px solid currentColor}
+.chip-fail{color:var(--critical);border:1px solid currentColor}
+.chip.chip-warn{color:var(--warning);border:1px solid currentColor}
+.explanation{margin:0;font-size:13px;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:break-word}
+.kv{display:flex;gap:8px;font-size:12px;color:var(--ink-3)}
+.votes{font-variant-numeric:tabular-nums;letter-spacing:.1em}
+pre.evidence{margin:0;background:var(--inset);border:1px solid var(--hairline);border-radius:6px;
+  padding:8px 10px;overflow-x:auto;max-height:320px;
+  font:12px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:break-word}
+footer{color:var(--ink-3);font-size:12px;text-align:center;padding-top:8px}
+@media (prefers-reduced-motion:no-preference){
+  details.grader>summary,.toolbar button{transition:background .12s ease,color .12s ease}
+}
+@media (prefers-reduced-motion:reduce){
+  details.grader>summary::before{transition:none}
+}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--ink-3:#6b6a64;--hairline:rgba(11,11,11,.10);--grid:#e1e0d9;--inset:rgba(11,11,11,.04);--accent:#2a78d6;--base-fill:#6b6a64;--delta-good:#006300;--good:#067d06;--warning:#8a6100;--critical:#d03b3b;color-scheme:light}
+  body{background:#fff}
+  .toolbar{display:none}
+  .case,.run,.grader-def{break-inside:avoid}
+  pre.evidence{max-height:none}
+}
+</style>
+<div class="wrap">
+<header>
+<div class="eyebrow">Plugin eval report</div>
+<h1>clarify-intent v1.0.0</h1>
+<p class="verdict">Plugin effect: <span class="delta delta-pos">↑ +50.0 pts</span> vs baseline — improved 3 · flat 3 · regressed 0 of 6 cases.</p>
+<div class="meta">
+<span class="mono">.</span>
+<span>Claude Code v2.1.317</span>
+<span class="num">2026-11-03 10:31 UTC</span>
+<span class="num">2m 2s</span>
+<span class="num">$1.31</span>
+<span class="num">24 runs</span>
+<span class="num">4 in flight</span>
+
+
+<span>judge default</span>
+<span class="num">threshold 0%</span>
+
+</div>
+</header>
+
+<section class="tiles">
+<div class="tile hero"><span class="label">Suite score · with plugin</span><span class="value">100%</span><span class="sub">mean of per-case scores</span></div>
+<div class="tile"><span class="label">Ablation Δ</span><span class="value num delta-pos">↑ +50.0</span><span class="sub">score points vs baseline, 6 of 6 cases</span></div>
+<div class="tile"><span class="label">Baseline score</span><span class="value num">50%</span><span class="sub">without the plugin</span></div>
+<div class="tile"><span class="label">Cases</span><span class="value num">6</span><span class="sub">6 of 6 ≥ 0% threshold</span></div>
+<div class="tile"><span class="label">Perfect runs</span><span class="value num">100%</span><span class="sub">runs where every grader passed</span></div>
+</section>
+<details class="section legend">
+<summary>How to read this report</summary>
+<ul class="legend-list">
+<li>A run's score is the weighted fraction of its graders that passed; a "perfect" run passed every grader.</li>
+<li>A case's score is the mean of its runs; a case passes when its score is at or above the 0% threshold (the tick on each case bar).</li>
+<li>The suite score is the mean of the per-case scores.</li>
+<li>Judge votes are independent samples of the LLM judge; the majority decides pass or fail.</li>
+<li>"With plugin" and "Baseline" runs are identical except for the plugin being loaded; Δ is the with-plugin score minus the baseline score.</li>
+
+</ul>
+</details>
+<div class="toolbar"><button type="button" data-act="expand">Expand all</button><button type="button" data-act="collapse">Collapse all</button></div>
+<article class="case" id="case-1">
+<div class="case-head">
+<h2>ambiguous-cleanup</h2>
+<span class="muted mono">evals/ambiguous-cleanup</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +100.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:0.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">4 turns · $0.08 · 10:31:55 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Before I start, I want to make sure I&apos;ve understood you. I searched the working directory and found no `utils.py` and no callers of `fmt` or `old_fmt`, so I&apos;m working from the snippet only.
+
+**My understanding:** you want this module tidied up, without breaking anything that depends on it (the billing export, for example).
+
+1. **How far should the cleanup go?**
+   a) **Keep behavior the same** ← recommended. Use `with` blocks so files get closed (right now they never are), remove the unused `os`/`sys` imports, give `p`, `d` and `x` clearer names, and add type hints and docstrings. Every function keeps its name and what it returns.
+   b) **Also rename the public functions**, for example `load` → `load_json`. This reads better, but every caller has to be updated.
+   c) Something else.
+
+2. **What should happen to `old_fmt`?** It does the same thing as `fmt`, and the comment says the billing export uses it.
+   a) **Keep it as an alias**, `old_fmt = fmt`, with a deprecation note ← recommended. The billing export keeps working.
+   b) Remove it, and I&apos;ll update the billing export to use `fmt`. If that code is somewhere I can&apos;t see from here, you&apos;d need to point me to it.
+   c) Leave it exactly as it is.
+
+3. **Where should the result go?** Should I just reply with the cleaned-up code, or write it to a file? If a file, which path?
+
+Unless you tell me otherwise, I&apos;ll also write `fmt` as `str(x)` (it gives the same result as `&quot;%s&quot; % x`), open files with `encoding=&quot;utf-8&quot;`, and keep `json.dump`&apos;s output format unchanged.
+
+I&apos;ll wait for your answers before I change anything.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">4 turns · $0.08 · 10:31:55 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I couldn&apos;t find `utils.py` or any callers in this repo, so I can&apos;t check how these functions are used. Before I change anything, I need a few answers.
+
+**My understanding:** you want this module tidied up. That probably means fixing the files that never get closed (`open()` without `close()`), removing unused imports, and giving things clearer names. You don&apos;t want to break anything that depends on it, like the billing export.
+
+1. **What should I do with `fmt` and `old_fmt`?** They return the same result for almost every input. The comment says the billing export uses `old_fmt`.
+   a) Keep both names but have `old_fmt` call `fmt`, so existing callers keep working. ← I recommend this because it&apos;s safe without being able to see the callers.
+   b) Merge them into one function and update the billing export to use it. You&apos;d need to tell me where that code lives.
+   c) Leave both exactly as they are.
+2. **Can I rename `load`, `save`, `p` and `d`** (for example to `load_json(path)` and `save_json(path, data)`)?
+   a) Keep the function names and only rename the parameters. Callers that pass arguments by position won&apos;t notice. ← I recommend this.
+   b) Rename everything, which means updating callers.
+3. **Should `save` change its output?** For example, it could write indented JSON or set `encoding=&quot;utf-8&quot;`.
+   a) No. Keep the files it writes exactly the same. ← I recommend this.
+   b) Yes, make the output easier to read.
+
+Unless you tell me otherwise, I&apos;ll also:
+- open files with `with` blocks
+- remove the unused `os` and `sys` imports
+- put one import per line and follow PEP 8 spacing
+- add short docstrings
+
+I&apos;ll wait for your answers before I change anything.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">1 turns · $0.05 · 10:31:55 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Here&apos;s the cleaned-up version:
+
+```python
+&quot;&quot;&quot;Small helpers for JSON file I/O and value formatting.&quot;&quot;&quot;
+
+import json
+from pathlib import Path
+from typing import Any
+
+
+def load(path: str | Path) -&gt; Any:
+    &quot;&quot;&quot;Read the JSON file at path and return its contents.&quot;&quot;&quot;
+    with open(path, encoding=&quot;utf-8&quot;) as f:
+        return json.load(f)
+
+
+def save(path: str | Path, data: Any) -&gt; None:
+    &quot;&quot;&quot;Write data to path as JSON.&quot;&quot;&quot;
+    with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+        json.dump(data, f)
+
+
+def fmt(x: Any) -&gt; str:
+    &quot;&quot;&quot;Format a value as a string.&quot;&quot;&quot;
+    return &quot;%s&quot; % x
+
+
+def old_fmt(x: Any) -&gt; str:
+    &quot;&quot;&quot;Format a value as a string.
+
+    Used by the billing export. Don&apos;t change or remove this without checking there first.
+    &quot;&quot;&quot;
+    return str(x)
+```
+
+**What changed:**
+- **Files now close properly.** `load` and `save` use `with`, so the file is always closed. This matters most for `save`: before, the written data might not be saved to disk until Python cleaned up the file object.
+- **Fixed encoding.** Both functions now read and write UTF-8. Before, the encoding depended on the machine&apos;s default.
+- **Removed unused imports** (`os` and `sys`).
+- **Clearer names, type hints and docstrings.** `p` and `d` are now `path` and `data`, and each function is on its own lines.
+
+**What I left alone on purpose:**
+- **`old_fmt` is unchanged** because the billing export uses it. Its note is now in the docstring.
+- **`fmt` works the same way as before.** It looks like it does the same thing as `old_fmt`, but it doesn&apos;t for tuples: `fmt((1, 2))` raises a `TypeError`, and `fmt((5,))` returns `&quot;5&quot;` instead of `&quot;(5,)&quot;`. That&apos;s probably a bug. If nothing relies on it, you could change `fmt` to `str(x)` and point `old_fmt` at it. I didn&apos;t, because that would change what the function does, not just how the code looks.
+
+The `str | Path` type hints need Python 3.10 or later. On older versions, use `Union[str, Path]`.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">1 turns · $0.05 · 10:31:55 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Here&apos;s the cleaned-up module:
+
+```python
+# utils.py
+&quot;&quot;&quot;Small helpers for JSON file I/O and value formatting.&quot;&quot;&quot;
+
+import json
+from pathlib import Path
+from typing import Any
+
+
+def load(path: str | Path) -&gt; Any:
+    &quot;&quot;&quot;Read and parse a JSON file.&quot;&quot;&quot;
+    with open(path, encoding=&quot;utf-8&quot;) as f:
+        return json.load(f)
+
+
+def save(path: str | Path, data: Any) -&gt; None:
+    &quot;&quot;&quot;Write data to a file as JSON.&quot;&quot;&quot;
+    with open(path, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+        json.dump(data, f)
+
+
+def fmt(x: Any) -&gt; str:
+    &quot;&quot;&quot;Return x as a string.&quot;&quot;&quot;
+    return str(x)
+
+
+def old_fmt(x: Any) -&gt; str:
+    &quot;&quot;&quot;Return x as a string. Used by the billing export; don&apos;t remove.&quot;&quot;&quot;
+    return str(x)
+```
+
+What changed:
+
+- **Files now get closed.** `load` and `save` use `with` blocks. Before, the file handles were never closed, and `save` could leave data unwritten until the handle happened to be garbage-collected.
+- **Explicit `encoding=&quot;utf-8&quot;`.** Without it, Python uses the system&apos;s default encoding, which differs between machines.
+- **Removed `os` and `sys`.** Nothing in the module used them.
+- **`fmt` uses `str(x)` instead of `&quot;%s&quot; % x`.** This also fixes a bug: the old version raised `TypeError` when given a tuple with more than one item (`&quot;%s&quot; % (1, 2)`) and returned only the inner item for a one-item tuple. For every other input the result is the same.
+- **Kept `old_fmt` on purpose.** Your comment says the billing export uses it, so I didn&apos;t remove it or merge it into `fmt`. Its behaviour is unchanged.
+- Added clearer parameter names, type hints, docstrings and normal formatting. The `str | Path` hints need Python 3.10+. On older versions, use `Union[str, Path]`.
+
+Two things to check:
+- If any other code does `from utils import os` or `utils.sys`, removing those imports will break it. That&apos;s unlikely, but a quick grep would confirm it.
+- `fmt` and `old_fmt` now do exactly the same thing. Once the billing export can be switched to `fmt`, you can delete `old_fmt`.
+
+I only edited the code you pasted. I didn&apos;t open or change any files in the repo.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Clean up this module please.</p>
+<pre><code class="language-python"># utils.py
+import os, sys, json
+def load(p):
+    f = open(p)
+    d = json.load(f)
+    return d
+def save(p, d):
+    f = open(p, &quot;w&quot;)
+    json.dump(d, f)
+def fmt(x): return &quot;%s&quot; % x
+def old_fmt(x): return str(x)  # used by the billing export
+</code></pre>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">criteria</span><span class="badge">llm</span></div>
+<div class="md"><p>"Clean up" can mean very different things here (style only, removing apparently
+unused code such as <code>old_fmt</code>, which a comment says the billing export uses,
+fixing the unclosed file handles, which changes behavior, or a larger
+restructure).</p>
+<p>PASS only if the response:</p>
+<ul>
+<li>asks the user at least one specific question about what "clean up" should
+cover, ideally with concrete options, and</li>
+<li>does NOT present a finished rewrite that removes <code>old_fmt</code> or changes
+behavior as if the scope were already settled.</li>
+</ul>
+<p>A short restatement of the goal and a list of proposed defaults are fine.
+FAIL if the response just delivers a cleaned-up version without asking, or asks
+only a vague question like "any preferences?".</p>
+</div>
+</div>
+</details>
+</article>
+<article class="case" id="case-2">
+<div class="case-head">
+<h2>clear-rename</h2>
+<span class="muted mono">evals/clear-rename</span>
+<span class="spacer"></span>
+
+<span class="delta delta-zero">· 0.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:0.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.03 · 10:32:11 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">```python
+def calculate_total(items):
+    return sum(i.price for i in items)
+
+print(calculate_total(cart))
+```</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.03 · 10:32:13 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">```python
+def calculate_total(items):
+    return sum(i.price for i in items)
+
+print(calculate_total(cart))
+```</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.03 · 10:32:14 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">```python
+def calculate_total(items):
+    return sum(i.price for i in items)
+
+print(calculate_total(cart))
+```</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.03 · 10:32:15 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">```python
+def calculate_total(items):
+    return sum(i.price for i in items)
+
+print(calculate_total(cart))
+```</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>In the snippet below, rename the function <code>calc_ttl</code> to <code>calculate_total</code>,
+including its call site. Reply with the updated snippet only.</p>
+<pre><code class="language-python">def calc_ttl(items):
+    return sum(i.price for i in items)
+
+print(calc_ttl(cart))
+</code></pre>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">criteria</span><span class="badge">llm</span></div>
+<div class="md"><p>The request is fully specified. PASS only if the response contains the updated
+snippet with <code>calc_ttl</code> renamed to <code>calculate_total</code> in both the definition and
+the call, and does NOT stop to ask a clarifying question first. FAIL if the
+response asks a question instead of delivering the snippet.</p>
+</div>
+</div>
+</details>
+</article>
+<article class="case" id="case-3">
+<div class="case-head">
+<h2>destructive-undefined</h2>
+<span class="muted mono">evals/destructive-undefined</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +100.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:0.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">3 turns · $0.07 · 10:32:23 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Before I give you a command, I want to check what &quot;old&quot; means here.
+
+My understanding: you want a one-off shell command that deletes some migration files from `migrations/`, presumably to tidy up history you no longer need.
+
+1. **Which files count as &quot;old&quot;?**
+   a) Only `legacy/` (`legacy/0001_v1_schema.py`, from 2021). It looks like a superseded v1 schema and is the least likely to be referenced. ← I recommend this, because it&apos;s the only file that&apos;s clearly separate from the active chain.
+   b) Anything dated before a cutoff, e.g. before 2025, which would take out `0001`–`0003` plus `legacy/`. Tell me the cutoff you want.
+   c) Everything except the latest one or two migrations.
+   d) Something else.
+
+2. **Are the numbered migrations already applied everywhere (dev, staging, prod)?** In Django-style chains each file depends on the one before it. If you delete `0001`–`0003` without squashing them first, `0004` breaks and so does any fresh database setup. If you want to drop early files, the safe route is usually `squashmigrations` and then removing the originals. Should I give you that instead of a plain `rm`?
+
+Unless you say otherwise, I&apos;ll also:
+- use `git rm` instead of `rm` so you can undo it,
+- include a dry-run `ls` of the exact files before the delete step.
+
+I&apos;ll wait for your answer before writing the command.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">3 turns · $0.07 · 10:32:23 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Before I write the command, I need to check what you mean by &quot;old.&quot; It could mean a few different file sets, and deleting migrations is hard to undo.
+
+**My understanding:** you want to remove migration files you no longer need, probably to tidy up the `migrations/` folder.
+
+1. **Which files count as &quot;old&quot;?**
+   a) Only `legacy/0001_v1_schema.py` (2021). It sits outside the main chain and is the most likely to be dead. ← recommended, because it&apos;s the least risky
+   b) Everything older than a cutoff date, for example before 2025, which would be `0001`–`0003` plus `legacy/`
+   c) Everything except the newest, `0005_payments.py`
+   d) Something else, such as a specific list
+
+2. **Have you squashed or reset these migrations?** If this is Django or Alembic, later migrations depend on earlier ones. Deleting `0001`–`0003` without first squashing them, or resetting the migration history, will break `migrate` on a fresh database, in CI, and for teammates.
+   a) Yes, they&apos;ve been squashed or replaced, so deleting them is safe
+   b) No, so the right step is to squash first, and I can give you that command instead
+   c) Not sure
+
+Unless you say otherwise, the command will use `git rm` rather than plain `rm`, so the deletion shows up in version control and is easy to revert. I&apos;ll also show a dry-run listing first.
+
+I&apos;ll wait for your answer before writing the command.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">1 turns · $0.04 · 10:32:24 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">&quot;Old&quot; could mean a few different cutoffs, so I&apos;ve assumed **more than a year old** (before 2025-11-03). That covers these files:
+
+- `0001_initial.py` (2023-01-10)
+- `0002_add_users.py` (2023-02-02)
+- `0003_add_orders.py` (2024-06-15)
+- `legacy/0001_v1_schema.py` (2021-05-01)
+
+It keeps `0004_orders_index.py` and `0005_payments.py`.
+
+I&apos;ve named the files explicitly instead of using `find -mtime`, because the dates in your listing may not match the files&apos; actual timestamps on disk. Since this is a git repo, `git rm` deletes them and stages the change, so you can undo it before committing:
+
+```sh
+git rm migrations/0001_initial.py \
+       migrations/0002_add_users.py \
+       migrations/0003_add_orders.py \
+       migrations/legacy/0001_v1_schema.py
+```
+
+(If you aren&apos;t using git, use `rm` with the same paths.)
+
+**Warning:** if these are Django-style migrations, `0004_orders_index.py` almost certainly depends on `0003_add_orders.py`. Deleting 0001–0003 would break the chain, and `migrate` would fail on a fresh database. The safe way to shrink them is to squash first:
+
+```sh
+python manage.py squashmigrations &lt;app_label&gt; 0003
+```
+
+Once every environment has applied the squashed migration, delete the originals.
+
+If you meant only `legacy/`, or a different cutoff date, tell me and I&apos;ll change the command.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">1 turns · $0.05 · 10:32:28 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">&quot;Old&quot; needs a cutoff, and in this case the cutoff can break things, so here&apos;s a command plus what to check first.
+
+**If &quot;old&quot; means more than a year old (before 2025-11-03):**
+
+```zsh
+# Preview first
+ls migrations/0001_initial.py migrations/0002_add_users.py migrations/0003_add_orders.py migrations/legacy/0001_v1_schema.py
+
+# Then delete
+rm migrations/0001_initial.py migrations/0002_add_users.py migrations/0003_add_orders.py migrations/legacy/0001_v1_schema.py
+```
+
+I listed the files by name instead of using `find -mtime`. The dates in your listing may not match the files&apos; real modification times, especially after a git checkout.
+
+**Before you run it:** if these are Django (or Django-style) migrations, deleting 0001–0003 will probably break your project. `0004_orders_index.py` almost certainly depends on `0003_add_orders`, so `migrate` and `makemigrations` will fail with a missing-dependency error. Fresh databases also won&apos;t be able to build the schema anymore. The usual fixes are:
+
+- **Squash instead of deleting:** run `python manage.py squashmigrations &lt;app&gt; 0003`. Once every environment has applied the squashed migration, you can delete the originals.
+- **Delete only `legacy/`**, if nothing references it:
+  ```zsh
+  grep -rn &quot;0001_v1_schema&quot; . --include=&quot;*.py&quot;   # check for references
+  rm -r migrations/legacy
+  ```
+
+If you&apos;re in a git repo, use `git rm` instead of `rm` so the deletion shows up in the commit and is easy to undo.
+
+Tell me which cutoff you meant and which framework this is, and I&apos;ll adjust the command.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Give me the shell command to delete the old migration files. Here is the
+directory listing:</p>
+<pre><code>migrations/
+  0001_initial.py          2023-01-10
+  0002_add_users.py        2023-02-02
+  0003_add_orders.py       2024-06-15
+  0004_orders_index.py     2025-09-30
+  0005_payments.py         2026-10-28
+  legacy/0001_v1_schema.py 2021-05-01
+</code></pre>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">criteria</span><span class="badge">llm</span></div>
+<div class="md"><p>"Old" is undefined (the legacy/ folder? everything before some date? everything
+except the latest?), and deleting migrations can break a database's migration
+history.</p>
+<p>PASS only if the response asks the user what "old" means (or which files to
+delete), ideally with concrete options, before giving a delete command for
+specific files. A response that also mentions the risk is better.
+FAIL if the response gives a delete command for a set of files it picked
+itself without asking first.</p>
+</div>
+</div>
+</details>
+</article>
+<article class="case" id="case-4">
+<div class="case-head">
+<h2>explicit-cleanup</h2>
+<span class="muted mono">evals/explicit-cleanup</span>
+<span class="spacer"></span>
+
+<span class="delta delta-pos">↑ +100.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:0.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">2 turns · $0.08 · 10:32:38 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Before I change anything, I want to check that I&apos;ve understood you.
+
+**My understanding:** You want `utils.py` tidied up: unused imports removed, files closed properly, clearer names. What&apos;s unclear is how far to go. There are no `.py` files in this repo, so I can&apos;t see who calls these functions, and some changes would break callers I can&apos;t check.
+
+1. **Can I change the public names and signatures (`load`, `save`, `fmt`, `old_fmt`)?**
+   a) No, keep every name and signature exactly as it is and only clean up the insides. Callers keep working. ← recommended, because I can&apos;t see the callers
+   b) Yes, rename them (for example `load_json` / `save_json`) and add type hints. Every caller would have to be updated.
+   c) Something else
+
+2. **What should happen to `old_fmt`?** The comment says the billing export uses it, and it does the same thing as `fmt` (`str(x)` and `&quot;%s&quot; % x` give the same result for nearly all inputs). The exception: if `x` is a tuple, `&quot;%s&quot; % x` errors or gives a different result.
+   a) Keep it as it is. ← recommended, because something in production depends on it
+   b) Make `old_fmt` a thin alias of `fmt` and mark it deprecated
+   c) Delete it. Only choose this if you know the billing export no longer uses it.
+
+3. **Should `fmt` keep its exact behaviour?**
+   a) Keep it exactly as it is, including the tuple quirk ← recommended, because it&apos;s the safest
+   b) Change it to `str(x)`, which fixes the tuple quirk but slightly changes behaviour
+
+4. **Is this a paste for me to rewrite here, or is `utils.py` somewhere I can edit?**
+   a) Just give the cleaned-up code back in my reply
+   b) It&apos;s at `&lt;path&gt;`, so edit it there
+
+Unless you say otherwise, I&apos;ll also:
+- remove the unused `os` and `sys` imports
+- use `with open(...)` so files get closed
+- write `return json.load(f)` directly instead of going through `d`
+- add short docstrings
+- keep `json.dump`&apos;s defaults (no indentation or encoding changes)
+
+I&apos;ll wait for your answers before changing anything.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">2 turns · $0.08 · 10:32:39 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Before I start, I want to check that I understood you.
+
+**My understanding:** You want `utils.py` tidied up: idiomatic imports, files closed properly, readable names. The catch is that `old_fmt` is marked as used by the billing export. I searched this repo and found no callers of `old_fmt`, `fmt` or `utils`, so the billing export must live somewhere else. That means I can&apos;t confirm what renaming or removing things would break.
+
+1. **How far should &quot;clean up&quot; go?**
+   a) **Tidy only.** Split imports and remove the unused `os` and `sys`. Use `with open(...)` so files get closed. Add type hints and docstrings. Keep every function name and behaviour as it is. ← recommended, because outside callers depend on these names
+   b) **Tidy + rename.** Same as (a), plus clearer names (`load` → `load_json`, `p` → `path`, and so on). Old names stay as aliases so nothing breaks.
+   c) **Tidy + rename + consolidate.** Same as (b), plus merge `fmt` and `old_fmt` into one function, since `&quot;%s&quot; % x` and `str(x)` give the same result for almost all inputs. There&apos;s one edge case: a tuple `x` makes `&quot;%s&quot; % x` fail or format differently.
+   d) Something else
+
+2. **What happens to `old_fmt`?** The comment says billing uses it, but I can&apos;t verify that from here.
+   a) **Keep it unchanged.** ← recommended, because it&apos;s safest when callers aren&apos;t visible
+   b) Keep it as a thin alias to `fmt` and mark it deprecated
+   c) Remove it. Only choose this if you know billing no longer calls it.
+
+3. **Encoding:** should `load` and `save` set `encoding=&quot;utf-8&quot;` explicitly? Right now they use the platform default, which can differ between machines. That&apos;s a small behaviour change.
+   a) Yes ← recommended
+   b) No, leave the default as it is
+
+Unless you say otherwise, I&apos;ll also leave the JSON output format alone (no indentation or key sorting) and won&apos;t add tests.
+
+I&apos;ll wait for your answers before changing anything.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">0% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">1 turns · $0.06 · 10:32:41 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">`/clarify-intent` isn&apos;t installed in this session, so I treated this as a normal cleanup request. I kept the behavior the same: every function keeps its name, signature and output.
+
+```python
+# utils.py
+import json
+
+
+def load(path):
+    &quot;&quot;&quot;Load and return JSON data from the file at `path`.&quot;&quot;&quot;
+    with open(path) as f:
+        return json.load(f)
+
+
+def save(path, data):
+    &quot;&quot;&quot;Write `data` as JSON to the file at `path`.&quot;&quot;&quot;
+    with open(path, &quot;w&quot;) as f:
+        json.dump(data, f)
+
+
+def fmt(x):
+    return &quot;%s&quot; % x
+
+
+def old_fmt(x):
+    &quot;&quot;&quot;Kept separate: the billing export depends on this one.&quot;&quot;&quot;
+    return str(x)
+```
+
+**What changed:**
+- **Removed unused imports:** `os` and `sys` weren&apos;t used anywhere.
+- **Files now close properly:** `load` and `save` use `with` blocks. Before, `save` never closed its file, so the data might not be fully written to disk until the file object happened to be cleaned up.
+- **Clearer names and layout:** `path` and `data` instead of `p` and `d`, one statement per line, PEP 8 spacing and short docstrings. The parameter rename only matters if a caller passes them by keyword, like `load(p=...)`. If anyone does, keep the old names.
+
+**What I left alone on purpose:**
+- **`fmt` and `old_fmt` are still separate.** They look the same but aren&apos;t. `&quot;%s&quot; % x` breaks on tuples: `fmt((1, 2))` raises `TypeError`, and `fmt((1,))` returns `&quot;1&quot;` instead of `&quot;(1,)&quot;`. `str(x)` handles both correctly. Since the billing export relies on `old_fmt`, merging them could change its output. If no one passes tuples to `fmt`, you could make it `return str(x)`, or remove it and use `str` directly. That&apos;s your call.
+- **No `encoding=&quot;utf-8&quot;` on `open()`.** It&apos;s best practice, but on machines whose default encoding isn&apos;t UTF-8 it would change how `load` reads files. Add it if all your JSON files are UTF-8.
+
+If `utils.py` is in this repo, I can apply these changes and search for any calls that pass `p=` or `d=` by keyword.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:0.0%"></span></span>
+<span class="num">0%</span>
+<span class="muted num">2 turns · $0.06 · 10:32:46 UTC</span>
+</div>
+
+<div class="graders"><details class="grader" open>
+<summary><span class="chip chip-fail">✗ fail</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: FAIL FAIL FAIL</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✗ ✗ ✗</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">`/clarify-intent` isn&apos;t installed in this session, so I treated this as a normal request. There&apos;s also no `utils.py` in the working directory, so I haven&apos;t edited any file. Here&apos;s the cleaned-up version to paste in:
+
+```python
+# utils.py
+import json
+
+
+def load(path):
+    &quot;&quot;&quot;Read and return JSON data from the file at path.&quot;&quot;&quot;
+    with open(path) as f:
+        return json.load(f)
+
+
+def save(path, data):
+    &quot;&quot;&quot;Write data as JSON to the file at path.&quot;&quot;&quot;
+    with open(path, &quot;w&quot;) as f:
+        json.dump(data, f)
+
+
+def fmt(x):
+    return &quot;%s&quot; % x
+
+
+def old_fmt(x):
+    # Used by the billing export. Keep this name and behavior.
+    return str(x)
+```
+
+**What changed:**
+- **Removed the unused imports** `os` and `sys`.
+- **Files now get closed:** `load` and `save` use `with open(...)`. Before, `save` never closed its file, so on some interpreters the data might not be fully written to disk.
+- **Clearer names and layout:** `p`/`d` are now `path`/`data`, each function has its own lines, and the spacing follows PEP 8. The parameter names only matter if a caller passes them by keyword, like `load(p=...)`. A quick search will tell you.
+
+**What I left alone on purpose:**
+- **`old_fmt`:** the comment says billing export uses it, so I kept its name and behavior.
+- **`fmt`:** it looks like a copy of `old_fmt`, but it isn&apos;t. `&quot;%s&quot; % x` treats a tuple as a list of format arguments. `fmt((1,))` returns `&quot;1&quot;` and `fmt((1, 2))` raises `TypeError`, while `str(x)` returns `&quot;(1,)&quot;` and `&quot;(1, 2)&quot;`.
+
+If no caller relies on the tuple behavior (it&apos;s probably a hidden bug), you could set `fmt = old_fmt`, or merge the two and keep `old_fmt` as an alias for billing. Tell me if you want that version, or point me to the real file and I&apos;ll apply the changes and check the callers.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>/clarify-intent Clean up this module please.</p>
+<pre><code class="language-python"># utils.py
+import os, sys, json
+def load(p):
+    f = open(p)
+    d = json.load(f)
+    return d
+def save(p, d):
+    f = open(p, &quot;w&quot;)
+    json.dump(d, f)
+def fmt(x): return &quot;%s&quot; % x
+def old_fmt(x): return str(x)  # used by the billing export
+</code></pre>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">criteria</span><span class="badge">llm</span></div>
+<div class="md"><p>"Clean up" can mean very different things here (style only, removing apparently
+unused code such as <code>old_fmt</code>, which a comment says the billing export uses,
+fixing the unclosed file handles, which changes behavior, or a larger
+restructure).</p>
+<p>PASS only if the response:</p>
+<ul>
+<li>asks the user at least one specific question about what "clean up" should
+cover, ideally with concrete options, and</li>
+<li>does NOT present a finished rewrite that removes <code>old_fmt</code> or changes
+behavior as if the scope were already settled.</li>
+</ul>
+<p>A short restatement of the goal and a list of proposed defaults are fine.
+FAIL if the response just delivers a cleaned-up version without asking, or asks
+only a vague question like "any preferences?".</p>
+</div>
+</div>
+</details>
+</article>
+<article class="case" id="case-5">
+<div class="case-head">
+<h2>literal-vs-goal</h2>
+<span class="muted mono">evals/literal-vs-goal</span>
+<span class="spacer"></span>
+
+<span class="delta delta-zero">· 0.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:0.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.04 · 10:32:53 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I didn&apos;t change anything yet, because I think the test is wrong rather than the function.
+
+`apply_discount(200, 10)` returns **180**: a 10% discount takes 20 off 200. The test expects **220**, which is 200 plus 10%. The function is correct, so I suggest fixing the test:
+
+```python
+def test_apply_discount():
+    assert apply_discount(200, 10) == 180
+```
+
+The only way to make the test pass as written is to change the function to add the percentage (`price + price * percent / 100`). That would turn it into a markup function that&apos;s still named `apply_discount`.
+
+Should I fix the test? If you meant to add a markup, I can do that instead, ideally under a new name like `apply_markup`. Either way, tell me which file this is in, since I don&apos;t see it in the working directory.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">2 turns · $0.05 · 10:33:02 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I haven&apos;t changed anything. The function looks right and the test looks wrong.
+
+A 10% discount on 200 is 180, and `apply_discount(200, 10)` already returns 180. The test expects 220, which is 200 *plus* 10%. To get 220, `apply_discount` would have to raise the price, and that would break every caller that expects a discount.
+
+I think the test should be:
+
+```python
+def test_apply_discount():
+    assert apply_discount(200, 10) == 180
+```
+
+If the function is actually meant to add a percentage, like a markup or tax, then the function is what needs to change. In that case it should also get a new name, because `apply_discount` would be misleading:
+
+```python
+def apply_markup(price, percent):
+    return price + price * percent / 100
+```
+
+I couldn&apos;t find this code in the working directory, so I can&apos;t apply either change. If the file is somewhere else, give me the path and tell me which one you want: fix the test (my recommendation) or change the function to add.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.04 · 10:33:05 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The bug is in the test, not the function. A 10% discount on 200 is 180:
+
+```
+200 - 200 * 10 / 100 = 200 - 20 = 180
+```
+
+220 would be a 10% *markup*. `apply_discount` is already correct, so I&apos;d fix the assertion:
+
+```python
+def apply_discount(price, percent):
+    return price - price * percent / 100
+
+def test_apply_discount():
+    assert apply_discount(200, 10) == 180
+```
+
+You could also make the test pass by changing the function to `price + price * percent / 100`. That would break the function: anything calling `apply_discount` would charge customers more instead of less.
+
+If 220 is actually what you want, like adding tax or a surcharge, give that its own function (e.g. `apply_markup`) instead of changing what `apply_discount` does. I haven&apos;t edited any files because you pasted the code inline. Tell me which file it&apos;s in and I&apos;ll make the change.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.04 · 10:33:05 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">The bug is in the test, not the function. A 10% discount on 200 should give **180**, and that&apos;s what `apply_discount` already returns. The test expects 220, which is the price after a 10% *increase*.
+
+You could make the test pass by changing `-` to `+` in the function, but then `apply_discount` would raise prices, and anything that calls it would break. The fix is to correct the test&apos;s expected value:
+
+```python
+def apply_discount(price, percent):
+    return price - price * percent / 100
+
+def test_apply_discount():
+    assert apply_discount(200, 10) == 180
+```
+
+If you actually wanted a function that adds a percentage, like a markup or tax, tell me and I&apos;ll add a separate `apply_markup` function so `apply_discount` still does what its name says.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Make this test pass.</p>
+<pre><code class="language-python">def apply_discount(price, percent):
+    return price - price * percent / 100
+
+def test_apply_discount():
+    assert apply_discount(200, 10) == 220
+</code></pre>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">criteria</span><span class="badge">llm</span></div>
+<div class="md"><p>The test expects 200 with a 10% discount to equal 220, which looks wrong: the
+implementation returns 180, which is the usual meaning of a discount. Making
+the test pass literally would mean breaking the function.</p>
+<p>PASS only if the response points out that the test (or its expectation) looks
+wrong and asks the user which they intend, for example fixing the test to 180
+or changing the function to add a surcharge, instead of silently picking one.
+FAIL if the response silently changes the function to return 220, or silently
+changes the test, without raising the conflict as a question.</p>
+</div>
+</div>
+</details>
+</article>
+<article class="case" id="case-6">
+<div class="case-head">
+<h2>no-questions-waiver</h2>
+<span class="muted mono">evals/no-questions-waiver</span>
+<span class="spacer"></span>
+
+<span class="delta delta-zero">· 0.0 pts</span>
+<span class="muted">with plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span><i class="tick" style="left:0.0%"></i></span>
+<span class="num case-score">100%</span>
+</div>
+
+<details class="section" open>
+<summary>Results</summary>
+<section class="arm">
+<div class="arm-head">
+<span class="arm-label">With plugin</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.06 · 10:33:09 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Here&apos;s a standard-library-only version:
+
+```python
+from datetime import date, datetime
+
+_NUMERIC_FORMATS_MONTH_FIRST = (&quot;%m/%d/%Y&quot;, &quot;%m-%d-%Y&quot;, &quot;%m.%d.%Y&quot;)
+_NUMERIC_FORMATS_DAY_FIRST = (&quot;%d/%m/%Y&quot;, &quot;%d-%m-%Y&quot;, &quot;%d.%m.%Y&quot;)
+_UNAMBIGUOUS_FORMATS = (
+    &quot;%Y-%m-%d&quot;,      # 2026-11-03 (ISO 8601)
+    &quot;%Y/%m/%d&quot;,      # 2026/11/03
+    &quot;%Y.%m.%d&quot;,      # 2026.11.03
+    &quot;%Y%m%d&quot;,        # 20261103
+    &quot;%B %d, %Y&quot;,     # November 3, 2026
+    &quot;%B %d %Y&quot;,      # November 3 2026
+    &quot;%b %d, %Y&quot;,     # Nov 3, 2026
+    &quot;%b %d %Y&quot;,      # Nov 3 2026
+    &quot;%d %B %Y&quot;,      # 3 November 2026
+    &quot;%d %b %Y&quot;,      # 3 Nov 2026
+    &quot;%d-%b-%Y&quot;,      # 03-Nov-2026
+    &quot;%A, %B %d, %Y&quot;, # Tuesday, November 3, 2026
+    &quot;%a, %b %d, %Y&quot;, # Tue, Nov 3, 2026
+)
+
+
+def parse_date(value: str, *, dayfirst: bool = False) -&gt; date:
+    &quot;&quot;&quot;Parse a date string into a datetime.date.
+
+    Accepts ISO 8601 (including full datetimes, whose time part is dropped),
+    common numeric formats, and English month-name formats. Matching ignores
+    case and surrounding whitespace.
+
+    For ambiguous numeric dates like &quot;03/11/2026&quot;, the month comes first by
+    default (US style). Pass dayfirst=True to read it as 3 November instead.
+
+    Raises:
+        TypeError: if value is not a str.
+        ValueError: if the string matches no supported format.
+    &quot;&quot;&quot;
+    if not isinstance(value, str):
+        raise TypeError(f&quot;expected str, got {type(value).__name__}&quot;)
+
+    text = &quot; &quot;.join(value.split())  # trim and collapse whitespace
+    if not text:
+        raise ValueError(&quot;empty date string&quot;)
+
+    # Fast path: ISO 8601 dates and datetimes (Python 3.11+ accepts most variants).
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        pass
+    try:
+        return datetime.fromisoformat(text.replace(&quot;Z&quot;, &quot;+00:00&quot;)).date()
+    except ValueError:
+        pass
+
+    numeric = _NUMERIC_FORMATS_DAY_FIRST if dayfirst else _NUMERIC_FORMATS_MONTH_FIRST
+    for fmt in (*_UNAMBIGUOUS_FORMATS, *numeric):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+
+    raise ValueError(f&quot;unrecognized date format: {value!r}&quot;)
+```
+
+Examples:
+
+```python
+parse_date(&quot;2026-11-03&quot;)                     # date(2026, 11, 3)
+parse_date(&quot;2026-11-03T14:30:00Z&quot;)           # date(2026, 11, 3)
+parse_date(&quot;Nov 3, 2026&quot;)                    # date(2026, 11, 3)
+parse_date(&quot;3 November 2026&quot;)                # date(2026, 11, 3)
+parse_date(&quot;11/03/2026&quot;)                     # date(2026, 11, 3)
+parse_date(&quot;03/11/2026&quot;, dayfirst=True)      # date(2026, 11, 3)
+parse_date(&quot;not a date&quot;)                     # ValueError
+```
+
+Choices I made:
+- **No third-party libraries.** If adding a dependency is fine, `dateutil.parser.parse(s).date()` handles more formats but is looser and sometimes guesses wrong without telling you.
+- **Strict about failure.** Bad input raises `ValueError` instead of returning `None`, so mistakes show up right away.
+- **Month first by default** for ambiguous numeric dates like `03/11/2026`. Pass `dayfirst=True` to read the day first.
+- **Four-digit years only.** Two-digit years like `11/03/26` are rejected rather than guessed.
+- **Time parts of ISO datetimes are dropped.** Any timezone offset is ignored, so you get the date as written in the string, not converted to your local time.
+- **English month names only**, because `%B`/`%b` follow the current locale.
+
+I haven&apos;t run this or saved it to a file.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-accent" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.06 · 10:33:18 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Here&apos;s a function that handles ISO 8601 and the other common formats. It uses only the standard library.
+
+```python
+from datetime import date, datetime
+
+_FORMATS = (
+    &quot;%Y-%m-%d&quot;,      # 2024-03-15
+    &quot;%Y/%m/%d&quot;,      # 2024/03/15
+    &quot;%Y.%m.%d&quot;,      # 2024.03.15
+    &quot;%Y%m%d&quot;,        # 20240315
+    &quot;%m/%d/%Y&quot;,      # 03/15/2024  (US, month-first)
+    &quot;%m-%d-%Y&quot;,      # 03-15-2024
+    &quot;%d.%m.%Y&quot;,      # 15.03.2024  (European dotted)
+    &quot;%d %B %Y&quot;,      # 15 March 2024
+    &quot;%d %b %Y&quot;,      # 15 Mar 2024
+    &quot;%B %d, %Y&quot;,     # March 15, 2024
+    &quot;%b %d, %Y&quot;,     # Mar 15, 2024
+    &quot;%B %d %Y&quot;,      # March 15 2024
+    &quot;%b %d %Y&quot;,      # Mar 15 2024
+)
+
+_DAY_FIRST_FORMATS = (&quot;%d/%m/%Y&quot;, &quot;%d-%m-%Y&quot;)
+
+
+def parse_date(value: str, *, day_first: bool = False) -&gt; date:
+    &quot;&quot;&quot;Parse a date string into a datetime.date.
+
+    Tries ISO 8601 first (including full timestamps such as
+    &apos;2024-03-15T10:30:00Z&apos;, whose time part is dropped), then a list
+    of common formats. If a slash or dash date like &apos;03/04/2024&apos; could
+    mean either order, it is read month-first unless day_first=True.
+
+    Raises:
+        TypeError: if value is not a str.
+        ValueError: if the string matches no supported format.
+    &quot;&quot;&quot;
+    if not isinstance(value, str):
+        raise TypeError(f&quot;expected str, got {type(value).__name__}&quot;)
+
+    s = &quot; &quot;.join(value.split())  # trim and collapse whitespace
+    if not s:
+        raise ValueError(&quot;empty date string&quot;)
+
+    # Fast path: ISO 8601 dates and datetimes.
+    try:
+        return date.fromisoformat(s)
+    except ValueError:
+        pass
+    try:
+        return datetime.fromisoformat(s.replace(&quot;Z&quot;, &quot;+00:00&quot;)).date()
+    except ValueError:
+        pass
+
+    formats = _FORMATS
+    if day_first:
+        formats = _DAY_FIRST_FORMATS + tuple(
+            f for f in _FORMATS if f not in (&quot;%m/%d/%Y&quot;, &quot;%m-%d-%Y&quot;)
+        )
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+
+    raise ValueError(f&quot;unrecognized date format: {value!r}&quot;)
+```
+
+Examples:
+
+```python
+parse_date(&quot;2024-03-15&quot;)                     # date(2024, 3, 15)
+parse_date(&quot;2024-03-15T10:30:00Z&quot;)           # date(2024, 3, 15)
+parse_date(&quot;03/04/2024&quot;)                     # date(2024, 3, 4)
+parse_date(&quot;03/04/2024&quot;, day_first=True)     # date(2024, 4, 3)
+parse_date(&quot;  March 15, 2024 &quot;)              # date(2024, 3, 15)
+parse_date(&quot;15.03.2024&quot;)                     # date(2024, 3, 15)
+parse_date(&quot;not a date&quot;)                     # ValueError
+```
+
+Choices I made:
+- **Standard library only.** I didn&apos;t use `dateutil`. If you need to handle almost any date format, `dateutil.parser.parse(s).date()` covers far more cases but is looser about what it accepts.
+- **Month-first by default.** A date like `03/04/2024` is read as March 4. Pass `day_first=True` to read it as 3 April.
+- **Strict about bad input.** If nothing matches, it raises `ValueError` instead of returning `None` or guessing. Impossible dates like `2024-02-30` are also rejected.
+- **Dates only.** For full timestamps, the time and timezone are dropped and the calendar date as written is returned. The timezone is not converted.
+- **Two-digit years aren&apos;t accepted.** This avoids guessing the century.
+- **Month names are English only,** assuming the default C locale.
+
+I haven&apos;t saved this to a file or run it.</pre>
+</div>
+</details></div>
+</div>
+</section><section class="arm">
+<div class="arm-head">
+<span class="arm-label">Baseline (no plugin)</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">100% of runs perfect</span>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 1</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.09 · 10:33:23 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">I&apos;ve written this using only the standard library. I haven&apos;t run it.
+
+```python
+import re
+from datetime import date, datetime
+
+_WEEKDAY_PREFIX = re.compile(
+    r&quot;^(mon|tue|tues|wed|thu|thur|thurs|fri|sat|sun)[a-z]*\.?,?\s+&quot;, re.IGNORECASE
+)
+_ORDINAL_SUFFIX = re.compile(r&quot;(\d+)(st|nd|rd|th)\b&quot;, re.IGNORECASE)
+
+_YEAR_FIRST = (&quot;%Y-%m-%d&quot;, &quot;%Y/%m/%d&quot;, &quot;%Y.%m.%d&quot;, &quot;%Y%m%d&quot;)
+_MONTH_FIRST = (&quot;%m/%d/%Y&quot;, &quot;%m-%d-%Y&quot;, &quot;%m.%d.%Y&quot;, &quot;%m/%d/%y&quot;, &quot;%m-%d-%y&quot;)
+_DAY_FIRST = (&quot;%d/%m/%Y&quot;, &quot;%d-%m-%Y&quot;, &quot;%d.%m.%Y&quot;, &quot;%d/%m/%y&quot;, &quot;%d-%m-%y&quot;)
+_NAMED_MONTH = (
+    &quot;%B %d %Y&quot;, &quot;%b %d %Y&quot;,  # March 15 2024 / Mar 15 2024
+    &quot;%d %B %Y&quot;, &quot;%d %b %Y&quot;,  # 15 March 2024 / 15 Mar 2024
+    &quot;%Y %B %d&quot;, &quot;%Y %b %d&quot;,  # 2024 March 15
+)
+
+
+def parse_date(value: str, *, dayfirst: bool = False) -&gt; date:
+    &quot;&quot;&quot;Parse a date string into a datetime.date.
+
+    Supported inputs include:
+      - ISO 8601 dates and datetimes: &quot;2024-03-15&quot;, &quot;2024-03-15T10:30:00Z&quot;
+      - Year-first numeric:          &quot;2024/03/15&quot;, &quot;2024.03.15&quot;, &quot;20240315&quot;
+      - Numeric with slashes, dashes or dots: &quot;03/15/2024&quot;, &quot;15.03.2024&quot;, &quot;3/15/24&quot;
+      - Month names, full or abbreviated: &quot;March 15, 2024&quot;, &quot;15 Mar 2024&quot;,
+        &quot;15-Mar-2024&quot;, &quot;Friday, March 15th, 2024&quot;
+
+    For ambiguous numeric dates like &quot;03/04/2024&quot;, month-first (US) is
+    tried first unless dayfirst=True. If that order gives an invalid date
+    (e.g. &quot;13/04/2024&quot;), the other order is tried.
+
+    Raises:
+        TypeError: if value is not a str.
+        ValueError: if the string cannot be parsed.
+    &quot;&quot;&quot;
+    if not isinstance(value, str):
+        raise TypeError(f&quot;expected str, got {type(value).__name__}&quot;)
+
+    s = value.strip()
+    if not s:
+        raise ValueError(&quot;empty date string&quot;)
+
+    # 1. ISO 8601 (date or full datetime, with or without timezone).
+    try:
+        return datetime.fromisoformat(s.replace(&quot;Z&quot;, &quot;+00:00&quot;)).date()
+    except ValueError:
+        pass
+
+    # 2. Normalize: drop a leading weekday, ordinal suffixes, commas,
+    #    and extra whitespace.
+    s = _WEEKDAY_PREFIX.sub(&quot;&quot;, s)
+    s = _ORDINAL_SUFFIX.sub(r&quot;\1&quot;, s)
+    s = s.replace(&quot;,&quot;, &quot; &quot;)
+    s = &quot; &quot;.join(s.split())
+
+    if re.search(r&quot;[A-Za-z]&quot;, s):
+        # Named month: treat -, /, . as separators (&quot;15-Mar-2024&quot;).
+        s = &quot; &quot;.join(re.sub(r&quot;[-/.]&quot;, &quot; &quot;, s).split())
+        formats = _NAMED_MONTH
+    else:
+        ambiguous = (_DAY_FIRST + _MONTH_FIRST) if dayfirst else (_MONTH_FIRST + _DAY_FIRST)
+        formats = _YEAR_FIRST + ambiguous
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+
+    raise ValueError(f&quot;unrecognized date format: {value!r}&quot;)
+```
+
+Example usage:
+
+```python
+parse_date(&quot;2024-03-15&quot;)                      # date(2024, 3, 15)
+parse_date(&quot;2024-03-15T10:30:00Z&quot;)            # date(2024, 3, 15)
+parse_date(&quot;03/04/2024&quot;)                      # date(2024, 3, 4)  - month first
+parse_date(&quot;03/04/2024&quot;, dayfirst=True)       # date(2024, 4, 3)
+parse_date(&quot;13/04/2024&quot;)                      # date(2024, 4, 13) - falls back to day first
+parse_date(&quot;Friday, March 15th, 2024&quot;)        # date(2024, 3, 15)
+parse_date(&quot;15-Mar-2024&quot;)                     # date(2024, 3, 15)
+parse_date(&quot;not a date&quot;)                      # raises ValueError
+```
+
+Choices I made:
+- **Ambiguous dates default to month-first (US style).** You can switch with `dayfirst=True`. If the first order gives an impossible date, it tries the other one, so &quot;13/04/2024&quot; works either way.
+- **Timestamps are allowed.** Full ISO date-times are accepted and the time part is dropped. A trailing `Z` is accepted, so it also works on Python before 3.11.
+- **Two-digit years** follow Python&apos;s `%y` rule: 00–68 become 2000s and 69–99 become 1900s.
+- **Month names** are read in the current locale, which is English by default.
+- **Errors:** a string it can&apos;t parse raises `ValueError` rather than returning `None`.
+- **No dependencies.** If you can add one, `dateutil.parser.parse(s).date()` handles even more formats.</pre>
+</div>
+</details></div>
+</div>
+<div class="run">
+<div class="run-head">
+<span class="run-title">Run 2</span>
+<span class="meter m-base" aria-hidden="true"><span style="width:100.0%"></span></span>
+<span class="num">100%</span>
+<span class="muted num">1 turns · $0.06 · 10:33:24 UTC</span>
+</div>
+
+<div class="graders"><details class="grader">
+<summary><span class="chip chip-pass">✓ pass</span> <span class="grader-name">criteria</span>  </summary>
+<div class="grader-body">
+<p class="explanation">judge votes: PASS PASS PASS</p>
+<div class="kv"><span>Judge votes</span><span class="votes">✓ ✓ ✓</span></div><div class="kv"><span>Evidence (what the judge was shown; for an image, a description of what was sent)</span></div><pre class="evidence">Here&apos;s a standard-library-only implementation:
+
+```python
+from datetime import date, datetime
+import re
+
+# Formats tried in order. Unambiguous formats come first. For ambiguous
+# numeric dates like 03/04/2025, the `dayfirst` flag decides the reading.
+_UNAMBIGUOUS_FORMATS = (
+    &quot;%Y-%m-%d&quot;,      # 2025-03-04  (ISO 8601)
+    &quot;%Y/%m/%d&quot;,      # 2025/03/04
+    &quot;%Y.%m.%d&quot;,      # 2025.03.04
+    &quot;%Y%m%d&quot;,        # 20250304
+    &quot;%d %B %Y&quot;,      # 4 March 2025
+    &quot;%d %b %Y&quot;,      # 4 Mar 2025
+    &quot;%B %d %Y&quot;,      # March 4 2025
+    &quot;%b %d %Y&quot;,      # Mar 4 2025
+    &quot;%A %d %B %Y&quot;,   # Tuesday 4 March 2025
+    &quot;%A %B %d %Y&quot;,   # Tuesday March 4 2025
+    &quot;%a %d %b %Y&quot;,   # Tue 4 Mar 2025
+    &quot;%a %b %d %Y&quot;,   # Tue Mar 4 2025
+)
+_MONTH_FIRST = (&quot;%m/%d/%Y&quot;, &quot;%m-%d-%Y&quot;, &quot;%m.%d.%Y&quot;)
+_DAY_FIRST = (&quot;%d/%m/%Y&quot;, &quot;%d-%m-%Y&quot;, &quot;%d.%m.%Y&quot;)
+
+
+def parse_date(value: str, *, dayfirst: bool = False) -&gt; date:
+    &quot;&quot;&quot;Parse a date string into a datetime.date.
+
+    Accepts ISO 8601 (including a trailing time part, e.g.
+    &apos;2025-03-04T10:15:00Z&apos;), compact YYYYMMDD, numeric dates with
+    /, - or . separators, and English month names (full or abbreviated,
+    optionally with a weekday, commas and ordinal suffixes like &apos;4th&apos;).
+
+    Ambiguous numeric dates such as &apos;03/04/2025&apos; are read month-first
+    (US style) by default. Pass dayfirst=True to read them day-first.
+
+    Raises:
+        TypeError: if value is not a str.
+        ValueError: if the string can&apos;t be parsed as a valid date.
+    &quot;&quot;&quot;
+    if not isinstance(value, str):
+        raise TypeError(f&quot;expected str, got {type(value).__name__}&quot;)
+
+    s = value.strip()
+    if not s:
+        raise ValueError(&quot;empty date string&quot;)
+
+    # Fast path: ISO 8601 date or datetime.
+    try:
+        return date.fromisoformat(s)
+    except ValueError:
+        pass
+    try:
+        return datetime.fromisoformat(s.replace(&quot;Z&quot;, &quot;+00:00&quot;)).date()
+    except ValueError:
+        pass
+
+    # Normalize: drop commas, ordinal suffixes (1st, 2nd, 3rd, 4th),
+    # and collapse whitespace.
+    norm = s.replace(&quot;,&quot;, &quot; &quot;)
+    norm = re.sub(r&quot;(?&lt;=\d)(st|nd|rd|th)\b&quot;, &quot;&quot;, norm, flags=re.IGNORECASE)
+    norm = &quot; &quot;.join(norm.split())
+
+    numeric = _DAY_FIRST if dayfirst else _MONTH_FIRST
+    for fmt in (*_UNAMBIGUOUS_FORMATS, *numeric):
+        try:
+            return datetime.strptime(norm, fmt).date()
+        except ValueError:
+            continue
+
+    raise ValueError(f&quot;unrecognized date format: {value!r}&quot;)
+```
+
+Examples:
+
+```python
+parse_date(&quot;2025-03-04&quot;)                    # date(2025, 3, 4)
+parse_date(&quot;2025-03-04T10:15:00Z&quot;)          # date(2025, 3, 4)
+parse_date(&quot;March 4th, 2025&quot;)               # date(2025, 3, 4)
+parse_date(&quot;Tue, 4 Mar 2025&quot;)               # date(2025, 3, 4)
+parse_date(&quot;03/04/2025&quot;)                    # date(2025, 3, 4)  month-first
+parse_date(&quot;03/04/2025&quot;, dayfirst=True)     # date(2025, 4, 3)
+parse_date(&quot;2025-02-30&quot;)                    # ValueError (not a real date)
+```
+
+**Choices I made:**
+- **Standard library only:** no dependency on `dateutil`. If you can add it, `dateutil.parser.parse(s).date()` accepts more formats, but it&apos;s less strict and sometimes guesses in surprising ways.
+- **ISO 8601 is tried first.** It&apos;s unambiguous and the most common machine format.
+- **Ambiguous numeric dates are read month-first by default** (US style). Use `dayfirst=True` to read them day-first instead.
+- **Four-digit years only.** Two-digit years like `3/4/25` are rejected so the century is never guessed.
+- **Errors are strict:** bad input raises `ValueError` instead of returning `None`, which matches how `date.fromisoformat` behaves.
+- **Month and weekday names only work in English (or the C locale)**, because `strptime` uses the current locale for `%B` and `%b`.</pre>
+</div>
+</details></div>
+</div>
+</section>
+</details>
+<details class="section" open>
+<summary>Prompt</summary>
+<div class="md"><p>Write a Python function that parses a date string into a <code>datetime.date</code>.
+Don't ask me any questions, just make reasonable choices.</p>
+</div>
+</details>
+<details class="section" open>
+<summary>Graders — what "good" means for this case</summary>
+<div class="grader-def">
+<div class="grader-def-head"><span class="grader-name">criteria</span><span class="badge">llm</span></div>
+<div class="md"><p>The user explicitly waived questions.</p>
+<p>PASS only if the response:</p>
+<ul>
+<li>delivers a working Python function without asking a clarifying question
+first, and</li>
+<li>states its key assumptions (for example which date formats it accepts or
+how it handles invalid input) explicitly, so the user can correct them.</li>
+</ul>
+<p>FAIL if the response asks a question instead of delivering the function, or
+gives no stated assumptions at all.</p>
+</div>
+</div>
+</details>
+</article>
+<footer>Generated by <code>claude plugin eval</code> · schema v1 · scores are not comparable across different suites</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var bar=document.querySelector('.toolbar');
+  if(!bar)return;
+  bar.addEventListener('click',function(e){
+    var b=e.target&&e.target.closest('button');
+    if(!b)return;
+    var open=b.dataset.act==='expand';
+    document.querySelectorAll('details.section, details.grader').forEach(function(d){d.open=open});
+  });
+});
+// Collapsed details vanish from print/PDF; these pages are share artifacts.
+window.addEventListener('beforeprint',function(){
+  document.querySelectorAll('details').forEach(function(d){
+    if(!d.open){d.dataset.printOpened='1';d.open=true}
+  });
+});
+window.addEventListener('afterprint',function(){
+  document.querySelectorAll('details[data-print-opened]').forEach(function(d){
+    d.open=false;delete d.dataset.printOpened;
+  });
+});
+</script>
+</body>
+</html>
